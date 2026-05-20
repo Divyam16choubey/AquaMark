@@ -1,0 +1,38 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.log
+*.out
+.ipynb_checkpoints/
+# Environment files
+.env
+backend/.env
+
+# Node / frontend build output
+frontend/node_modules/
+frontend/dist/
+
+# Backend Node modules
+backend/node_modules/
+
+# Runtime data and generated assets
+data/uploads/
+data/synthetic_covers/
+data/*.db
+outputs/
+
+# Generated model artifacts
+models/*.h5
+models/*.keras
+models/*.pkl
+models/watermark_checkpoint.json
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# PyTorch model checkpoints
+backend/ai_model/checkpoints/
+*.pt
