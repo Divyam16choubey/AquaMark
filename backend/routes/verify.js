@@ -30,7 +30,7 @@ const router = express.Router();
 
 const upload = multer({
   dest: path.join(__dirname, "..", "uploads"),
-  limits: { fileSize: 20 * 1024 * 1024 },
+  limits: { fileSize: 50 * 1024 * 1024 },
 });
 
 router.post("/verify-watermark", upload.single("file"), async (req, res) => {

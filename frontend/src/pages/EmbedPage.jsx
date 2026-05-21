@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { motion } from 'framer-motion';
 import { HiOutlineArrowDownTray, HiOutlineArrowUpTray, HiOutlineShieldCheck, HiOutlineSparkles } from 'react-icons/hi2';
@@ -70,12 +70,39 @@ export default function EmbedPage({ modelStatus, modelStatusError }) {
         setError('');
     }, []);
 
+    const onDropRejected = useCallback((rejections) => {
+        const first = rejections?.[0]?.errors?.[0];
+        if (!first) {
+            setError('That file cannot be uploaded. Please choose a valid image.');
+            return;
+        }
+
+        if (first.code === 'file-too-large') {
+            setError('File is too large. Please upload an image up to 50 MB.');
+            return;
+        }
+
+        if (first.code === 'file-invalid-type') {
+            setError('Unsupported file type. Use PNG, JPG, JPEG, BMP, WEBP, TIF, or TIFF.');
+            return;
+        }
+
+        setError(first.message || 'That file cannot be uploaded.');
+    }, []);
+
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,
+        onDropRejected,
         accept: { 'image/*': ['.png', '.jpg', '.jpeg', '.bmp', '.webp', '.tif', '.tiff'] },
         maxFiles: 1,
-        maxSize: 20 * 1024 * 1024,
+        maxSize: 50 * 1024 * 1024,
     });
+
+    useEffect(() => {
+        return () => {
+            if (localPreview) URL.revokeObjectURL(localPreview);
+        };
+    }, [localPreview]);
 
     const handleSampleClick = async (samplePath, filename) => {
         try {
@@ -112,7 +139,7 @@ export default function EmbedPage({ modelStatus, modelStatusError }) {
             const response = await embedWatermark(file, { watermarkText, strength });
             setResult(response);
         } catch (err) {
-            setError(err.response?.data?.detail || 'Embedding failed.');
+            setError(err.response?.data?.detail || err.message || 'Embedding failed.');
         } finally {
             setLoading(false);
         }
@@ -165,7 +192,7 @@ export default function EmbedPage({ modelStatus, modelStatusError }) {
                             <p className="mt-4 font-display text-xl font-semibold text-surface-900 dark:text-white">
                                 {isDragActive ? 'Drop the image here' : 'Drag an image here or click to browse'}
                             </p>
-                            <p className="mt-2 text-sm text-surface-600 dark:text-surface-300">PNG, JPG, BMP, TIFF, WEBP up to 20 MB.</p>
+                            <p className="mt-2 text-sm text-surface-600 dark:text-surface-300">PNG, JPG, BMP, TIFF, WEBP up to 50 MB.</p>
                         </div>
 
                         <div>
@@ -254,7 +281,7 @@ export default function EmbedPage({ modelStatus, modelStatusError }) {
                                 <div className="grid gap-4 sm:grid-cols-2">
                                     <div className="rounded-3xl border border-white/40 bg-white/70 p-4 dark:border-white/10 dark:bg-surface-900/70">
                                         <div className="text-xs uppercase tracking-[0.22em] text-surface-500 dark:text-surface-400">Original</div>
-                                        <img src={result.preview.original} alt="Original image" className="mt-3 aspect-[4/3] w-full rounded-2xl object-cover" />
+                                        <img src={result.preview.original || localPreview} alt="Original image" className="mt-3 aspect-[4/3] w-full rounded-2xl object-cover" />
                                     </div>
                                     <div className="rounded-3xl border border-primary-200/60 bg-primary-50/70 p-4 dark:border-primary-900/30 dark:bg-primary-900/20">
                                         <div className="text-xs uppercase tracking-[0.22em] text-primary-700 dark:text-primary-300">Watermarked</div>

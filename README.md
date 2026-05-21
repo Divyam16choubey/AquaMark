@@ -1,78 +1,99 @@
 # AquaMark AI
 
-Invisible image watermarking platform with a TensorFlow encoder/decoder backend, a FastAPI API layer, and a React + Vite frontend for embedding and verification workflows.
+AquaMark is an invisible image watermarking platform with a React frontend, an Express backend, and a PyTorch inference core.
 
-For the implementation notes and theory view of the same system, see [theory.ipynb](./theory.ipynb). The notebook links back here for setup and run commands.
+This repository also includes the project paper [AM_Documentation.pdf](./AM_Documentation.pdf), which presents an SVM-based integrity prediction approach. The current runtime in code is a neural encoder/decoder pipeline invoked through Node.js.
 
-## Overview
+## What This Project Does
 
-- Embeds a 64-bit text-derived watermark into an image with a trainable encoder.
-- Verifies watermark presence and integrity with a decoder that returns bit probabilities and integrity classes.
-- Exposes model health through `/health` and `/api/model-status`, including whether trained checkpoints are loaded.
-- Serves a modern frontend for upload, preview, download, and verification flows.
+- Embeds a 64-bit invisible watermark derived from user text.
+- Verifies whether a suspect image is `safe`, `corrupted`, or `absent`.
+- Reports confidence, BER (bit error rate), decoded signature fragments, and integrity probabilities.
+- Supports sample-image workflows from the frontend for quick testing.
+- Exposes model readiness (`trained` checkpoint present or not) to the UI.
 
-## Active Architecture
+## Architecture (Implemented Runtime)
 
-The current runtime path is the TensorFlow watermarking stack started by `backend/main.py`.
+### 1. Frontend (React + Vite)
 
-- `backend/models/encoder.py`: builds the image + watermark encoder.
-- `backend/models/decoder.py`: reconstructs watermark bits and integrity probabilities.
-- `backend/models/training_pipeline.py`: attack-aware training loop and checkpoint export.
-- `backend/services/embed_service.py`: embed flow used by `/api/embed-watermark`.
-- `backend/services/verify_service.py`: verification flow used by `/api/verify-watermark`.
-- `frontend/src/pages/EmbedPage.jsx` and `frontend/src/pages/VerifyPage.jsx`: user-facing flows.
+Main flow pages:
+- `frontend/src/pages/EmbedPage.jsx`
+- `frontend/src/pages/VerifyPage.jsx`
 
-Legacy SVM-era artifacts still exist in the repository for reference, but they are not the active runtime used by the FastAPI app.
+Behavior:
+- Upload images up to 20 MB.
+- Set watermark text and embedding strength.
+- Preview original and processed images.
+- Download generated watermarked output.
+- Show warning banners when the detector is untrained.
 
-## Quick Start
+### 2. Backend Gateway (Node.js + Express)
 
-### Prerequisites
+Entrypoint:
+- `backend/server.js`
+
+Responsibilities:
+- File upload handling via `multer`.
+- API routing for embed/verify/download/model status.
+- Spawning Python inference with `backend/helpers/runPython.js`.
+- Serving generated artifacts from `backend/outputs`.
+
+### 3. AI Core (PyTorch)
+
+Entrypoint:
+- `backend/ai_model/predict.py`
+
+Key modules:
+- `backend/ai_model/inference/embed.py`
+- `backend/ai_model/inference/verify.py`
+- `backend/ai_model/models/encoder.py`
+- `backend/ai_model/models/decoder.py`
+- `backend/ai_model/attacks/simulator.py`
+
+Core logic:
+- Text is hashed/converted into a 64-bit payload.
+- Encoder generates a low-amplitude residual and watermarked image.
+- Decoder predicts bit probabilities + integrity probabilities.
+- Final integrity state blends BER thresholds with classifier confidence.
+
+## API Endpoints (Current)
+
+Base URL: `http://localhost:8000`
+
+- `GET /` : service metadata
+- `GET /health` : health ping
+- `GET /api/model-status` : checkpoint/model status summary
+- `POST /api/embed-watermark` : embed watermark into uploaded image
+- `POST /api/verify-watermark` : verify watermark from uploaded image
+- `GET /api/download/:jobId` : download generated watermarked image
+
+## Setup
+
+## Prerequisites
 
 - Python 3.10+
 - Node.js 18+
 
-### 1. Install backend dependencies
+## Install Dependencies
 
 ```bash
 pip install -r requirements.txt
+cd backend && npm install
+cd ../frontend && npm install
 ```
 
-### 2. Install frontend dependencies
+## Run Backend
+
+From project root:
 
 ```bash
-cd frontend
-npm install
+cd backend
+npm run dev
 ```
 
-### 3. Optional: train checkpoints
+Backend runs on `http://localhost:8000` by default.
 
-The app can start without checkpoints, but it will report `trained: false` until weights are generated.
-
-```bash
-python -m backend.train --epochs 4 --steps-per-epoch 40 --validation-steps 8 --batch-size 4
-```
-
-You can also export synthetic covers during training setup:
-
-```bash
-python -m backend.train --generate-synthetic-covers 64
-```
-
-### 4. Start the backend
-
-Run this from the project root:
-
-```bash
-uvicorn backend.main:app --reload --port 8000
-```
-
-Backend URLs:
-
-- App root: `http://localhost:8000/`
-- Health: `http://localhost:8000/health`
-- OpenAPI docs: `http://localhost:8000/docs`
-
-### 5. Start the frontend
+## Run Frontend
 
 In a second terminal:
 
@@ -81,73 +102,66 @@ cd frontend
 npm run dev
 ```
 
-Frontend URL:
+Frontend runs on `http://localhost:5173`.
 
-- UI: `http://localhost:5173`
+## Optional AI CLI Checks
 
-## Runtime Behavior
+From `backend/ai_model`:
 
-- On startup, the backend creates runtime directories and warms the model registry.
-- If `models/encoder.weights.h5` and `models/decoder.weights.h5` exist, they are loaded automatically.
-- If checkpoints are missing, the frontend now surfaces a warning banner so users know the flow is live but the model is still untrained.
-- Processed artifacts are written under `outputs/`, and uploaded runtime files are written under `data/uploads/`.
+```bash
+python predict.py embed ../../test_images/synthetic_noise.png --output ../../outputs/watermarked.png --text "AquaMark"
+python predict.py verify ../../outputs/watermarked.png --text "AquaMark"
+```
 
-## API Surface
-
-### Core routes
-
-| Method | Endpoint | Purpose |
-| --- | --- | --- |
-| `GET` | `/` | Basic runtime metadata |
-| `GET` | `/health` | Health check + checkpoint presence |
-| `GET` | `/api/model-status` | Model registry status + checkpoint metadata |
-| `POST` | `/api/embed-watermark` | Embed an invisible watermark into an uploaded image |
-| `GET` | `/api/download/{job_id}` | Download a generated watermarked PNG |
-| `POST` | `/api/verify-watermark` | Recover watermark bits and predict integrity state |
-
-### Typical flow
-
-1. Start the backend and frontend.
-2. Optionally confirm checkpoint state at `/api/model-status`.
-3. Upload an image in the embed page and create a watermarked asset.
-4. Download the output or pass it into the verify page.
-5. Review integrity state, BER, confidence, and decoded signature data.
-
-## Project Layout
+## Project Structure
 
 ```text
 AquaMark/
 |-- backend/
-|   |-- main.py
-|   |-- train.py
-|   |-- config.py
-|   |-- models/
+|   |-- server.js
 |   |-- routes/
-|   |-- services/
-|   `-- utils/
+|   |-- helpers/
+|   |-- ai_model/
+|   |-- uploads/
+|   `-- outputs/
 |-- frontend/
 |   |-- src/
-|   |   |-- components/
-|   |   |-- pages/
-|   |   `-- services/
-|   `-- package.json
-|-- data/
-|-- models/
+|   `-- public/
+|-- test_images/
 |-- outputs/
+|-- AM_Documentatio pdf
 |-- theory.ipynb
 |-- requirements.txt
 `-- README.md
 ```
 
-## README and Theory Notebook
+## Alignment with AM_Documentation.pdf
 
-The two project docs are meant to complement each other:
+`AM_Documentation.pdf` documents the academic baseline:
+- invisible watermarking,
+- attack simulation,
+- feature extraction,
+- RBF-SVM integrity classification,
+- CIFAR-10 based evaluation (reported ~92-95% accuracy).
 
-- `README.md`: setup, commands, routes, and operational behavior.
-- `theory.ipynb`: architecture summary, equations, training logic, and implementation notes.
+Current codebase direction:
+- preserves the same high-level integrity verification goal,
+- but runtime inference is implemented with a neural encoder/decoder instead of the paper's SVM feature classifier.
 
-If the runtime pipeline changes, update both files together so the operational and conceptual docs stay aligned.
+Both are valuable:
+- Paper: methodology and academic framing.
+- Code: deployable full-stack product workflow.
+
+## Notes
+
+- Some legacy references in the frontend (`Docs.jsx`, `Dashboard.jsx`) still mention old SVM/FastAPI endpoints that are not currently wired into `App.jsx` routes.
+- `run_project.bat` and `run_project.sh` currently point to FastAPI (`uvicorn backend.main:app`) and should be treated as legacy launch scripts unless updated.
+
+## Documentation Pairing
+
+- [README.md](./README.md): setup, architecture, APIs, and run workflow.
+- [theory.ipynb](./theory.ipynb): conceptual model, equations, and paper-to-code mapping.
 
 ## License
 
-This project is for educational and research use.
+For educational and research use.

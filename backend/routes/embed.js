@@ -6,7 +6,7 @@
  *   {
  *     job_id, message, download_url,
  *     model_status: { device, trained },
- *     preview: { original: base64, watermarked: base64 },
+ *     preview: { original: string, watermarked: string },
  *     metrics: { psnr, ssim, requested_strength, ... }
  *   }
  */
@@ -16,14 +16,14 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 const { runPython, AI_MODEL_DIR } = require("../helpers/runPython");
-const { imageToBase64, makeJobId } = require("../helpers/imageUtils");
+const { makeJobId } = require("../helpers/imageUtils");
 
 const router = express.Router();
 
 // Store uploads in backend_modified/uploads/
 const upload = multer({
   dest: path.join(__dirname, "..", "uploads"),
-  limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB
 });
 
 router.post("/embed-watermark", upload.single("file"), async (req, res) => {
@@ -63,9 +63,8 @@ router.post("/embed-watermark", upload.single("file"), async (req, res) => {
       return res.status(500).json({ detail: "Embedding produced no output file." });
     }
 
-    // Build previews as base64 for the frontend
-    const originalPreview = imageToBase64(inputPath);
-    const watermarkedPreview = imageToBase64(outputPath);
+    // Return lightweight preview URLs instead of large base64 payloads.
+    const watermarkedFilename = `${jobId}_watermarked.png`;
 
     // Parse PSNR/SSIM from stdout
     const psnrMatch = stdout.match(/PSNR=([\d.]+)/);
@@ -81,14 +80,14 @@ router.post("/embed-watermark", upload.single("file"), async (req, res) => {
       message: "Invisible watermark embedded successfully.",
       download_url: `/api/download/${jobId}`,
       source_filename: req.file.originalname,
-      watermarked_filename: `${jobId}_watermarked.png`,
+      watermarked_filename: watermarkedFilename,
       model_status: {
         device: "cuda",
         trained: fs.existsSync(path.join(AI_MODEL_DIR, "checkpoints", "checkpoint_best.pt")),
       },
       preview: {
-        original: originalPreview,
-        watermarked: watermarkedPreview,
+        original: "",
+        watermarked: `/outputs/embed/${watermarkedFilename}`,
       },
       metrics: {
         psnr: `${psnrVal} dB`,

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { motion } from 'framer-motion';
 import { HiOutlineArrowUpTray, HiOutlineMagnifyingGlass, HiOutlineShieldCheck, HiOutlineShieldExclamation } from 'react-icons/hi2';
@@ -57,12 +57,39 @@ export default function VerifyPage({ modelStatus, modelStatusError }) {
         setError('');
     }, []);
 
+    const onDropRejected = useCallback((rejections) => {
+        const first = rejections?.[0]?.errors?.[0];
+        if (!first) {
+            setError('That file cannot be uploaded. Please choose a valid image.');
+            return;
+        }
+
+        if (first.code === 'file-too-large') {
+            setError('File is too large. Please upload an image up to 50 MB.');
+            return;
+        }
+
+        if (first.code === 'file-invalid-type') {
+            setError('Unsupported file type. Use PNG, JPG, JPEG, BMP, WEBP, TIF, or TIFF.');
+            return;
+        }
+
+        setError(first.message || 'That file cannot be uploaded.');
+    }, []);
+
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,
+        onDropRejected,
         accept: { 'image/*': ['.png', '.jpg', '.jpeg', '.bmp', '.webp', '.tif', '.tiff'] },
         maxFiles: 1,
-        maxSize: 20 * 1024 * 1024,
+        maxSize: 50 * 1024 * 1024,
     });
+
+    useEffect(() => {
+        return () => {
+            if (localPreview) URL.revokeObjectURL(localPreview);
+        };
+    }, [localPreview]);
 
     const statusTone = useMemo(() => {
         const state = result?.analysis?.state;

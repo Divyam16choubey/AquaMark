@@ -20,6 +20,7 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path");
 const fs = require("fs");
+const multer = require("multer");
 
 const embedRoute = require("./routes/embed");
 const verifyRoute = require("./routes/verify");
@@ -51,6 +52,16 @@ app.use("/api", embedRoute);
 app.use("/api", verifyRoute);
 app.use("/api", statusRoute);
 app.use("/api", downloadRoute);
+
+app.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    if (err.code === "LIMIT_FILE_SIZE") {
+      return res.status(413).json({ detail: "File is too large. Max upload size is 50 MB." });
+    }
+    return res.status(400).json({ detail: `Upload error: ${err.message}` });
+  }
+  return next(err);
+});
 
 // ── Root ─────────────────────────────────────────────────────────────────────
 app.get("/", (req, res) => {
