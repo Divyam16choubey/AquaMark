@@ -1,38 +1,201 @@
-# Python
+# =============================================================================
+# AquaMark — .gitignore
+# =============================================================================
+# Sections:
+#   1. Python environment and bytecode
+#   2. Environment and secrets
+#   3. Backend runtime artifacts
+#   4. ML model artifacts, checkpoints, and generated data
+#   5. Frontend build artifacts and tool caches
+#   6. Node.js
+#   7. OS and IDE noise
+# =============================================================================
+
+
+# =============================================================================
+# 1. Python environment and bytecode
+# =============================================================================
+
+# Virtual environments — all common naming conventions
 .venv/
+.venv-new/
 venv/
+env/
+.env-venv/
+
+# Python bytecode and compiled extensions
 __pycache__/
 *.py[cod]
-*.log
-*.out
+*.pyd
+*.pyo
+*.so
+
+# Distribution / packaging
+*.egg
+*.egg-info/
+dist/
+build/
+*.whl
+
+# Type-checking caches
+.mypy_cache/
+.pytype/
+.ruff_cache/
+
+# Testing and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# Jupyter notebook checkpoints
 .ipynb_checkpoints/
-# Environment files
+
+# =============================================================================
+# 2. Environment and secrets
+# =============================================================================
+
+# Root-level .env files (none currently exist, rule is preventive)
 .env
+.env.local
+.env.*.local
+
+# Backend-specific environment file
 backend/.env
+backend/.env.local
 
-# Node / frontend build output
-frontend/node_modules/
-frontend/dist/
+# Keep .env.example or .env.template files — they contain only safe placeholders
+!.env.example
+!.env.template
+!backend/.env.example
+!backend/.env.template
 
-# Backend Node modules
-backend/node_modules/
 
-# Runtime data and generated assets
+# =============================================================================
+# 3. Backend runtime artifacts
+# =============================================================================
+
+# User-uploaded images (temporary request files).
+# NOTE: 54 files in this directory are ALREADY TRACKED in Git from a previous
+# commit before this rule existed. Adding this rule prevents NEW uploads from
+# being staged, but does not remove the existing tracked files from the index.
+# To fix: run  git rm --cached backend/uploads/  and commit the removal.
+backend/uploads/
+
+# Generated watermarked images, residuals, and verification JSON results
+backend/outputs/
+
+# Any future inputs directory under backend
+backend/inputs/
+
+# Uploaded files from an older data/ structure (legacy path, kept for safety)
 data/uploads/
 data/synthetic_covers/
 data/*.db
+data/*.sqlite
+
+
+# =============================================================================
+# 4. ML model artifacts, checkpoints, and generated data
+# =============================================================================
+
+# Trained checkpoint files — binary, large (checkpoint_best.pt is 265 MB).
+# These are correctly excluded here and are NOT currently tracked in Git.
+# Distribute checkpoints via Hugging Face, Google Drive, or GitHub Releases;
+# document the download URL in README.md.
+backend/ai_model/checkpoints/
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.onnx
+
+# Training logs (TensorBoard events, plain-text logs)
+backend/ai_model/logs/
+*.log
+*.out
+
+# Downloaded or generated datasets stored locally
+backend/ai_model/dataset/
+
+# Model-generated visualizations and evaluation outputs
+# (e.g. confusion_matrix.png, roc_curve.png, metrics.json, attack_test results)
+backend/ai_model/outputs/
 outputs/
 
-# Generated model artifacts
+# Legacy SVM / old-architecture model artifacts
 models/*.h5
 models/*.keras
 models/*.pkl
+models/*.joblib
 models/watermark_checkpoint.json
 
-# OS noise
-.DS_Store
-Thumbs.db
+# Generic database / serialisation files
+*.db
+*.sqlite
+*.sqlite3
 
-# PyTorch model checkpoints
-backend/ai_model/checkpoints/
-*.pt
+
+# =============================================================================
+# 5. Frontend build artifacts and tool caches
+# =============================================================================
+
+# Vite build output and preview cache
+# (also covered by frontend/.gitignore, kept here for belt-and-suspenders)
+frontend/dist/
+frontend/dist-ssr/
+frontend/.vite/
+
+# Vite / Rollup / ESBuild intermediate caches
+frontend/.cache/
+.vite/
+
+# =============================================================================
+# 6. Node.js
+# =============================================================================
+
+# Dependencies — both backend and frontend
+node_modules/
+
+# Lock files are KEPT for reproducibility (package-lock.json is tracked).
+# Only ignore npm/yarn debug logs.
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+
+# =============================================================================
+# 7. OS and IDE noise
+# =============================================================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# VS Code — ignore personal workspace settings but keep shared extensions list
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# JetBrains IDEs
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Vim / Emacs swap files
+*.swp
+*.swo
+*~
+\#*\#
+.\#*
