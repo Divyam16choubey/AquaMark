@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <rect width="32" height="32" fill="#111111"/>
+  <!-- A stylised water-drop / shield mark in coral -->
+  <path d="M16 5 L24 13 C24 19.627 20.418 24 16 27 C11.582 24 8 19.627 8 13 Z" fill="#FF503D"/>
+  <!-- Inner crosshair detail -->
+  <line x1="16" y1="10" x2="16" y2="22" stroke="#111111" stroke-width="1.2" stroke-linecap="round"/>
+  <line x1="10" y1="16" x2="22" y2="16" stroke="#111111" stroke-width="1.2" stroke-linecap="round"/>
+</svg>

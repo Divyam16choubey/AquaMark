@@ -1,53 +1,90 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { HiMoon, HiOutlineMenu, HiOutlineX, HiSun } from 'react-icons/hi';
-import { IoWater } from 'react-icons/io5';
+import { HiMoon, HiSun, HiMenuAlt3, HiX } from 'react-icons/hi';
 
-const navLinks = [
-    { path: '/', label: 'Home' },
-    { path: '/embed', label: 'Embed' },
+const NAV_LINKS = [
+    { path: '/',       label: 'Platform' },
+    { path: '/embed',  label: 'Embed' },
     { path: '/verify', label: 'Verify' },
 ];
+
+/** Coral shield mark wordmark */
+function LogoMark() {
+    return (
+        <Link to="/" className="flex items-center gap-2.5 group focus-visible:outline-none" aria-label="AquaMark home">
+            {/* SVG shield / water-drop mark */}
+            <svg
+                width="28" height="28"
+                viewBox="0 0 28 28"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+                className="flex-shrink-0"
+            >
+                <rect width="28" height="28" rx="4" fill="#111111"/>
+                <path
+                    d="M14 4.5 L21 11 C21 17 17.5 21.5 14 24 C10.5 21.5 7 17 7 11 Z"
+                    fill="#FF503D"
+                />
+                <line x1="14" y1="9"  x2="14" y2="19" stroke="#111111" strokeWidth="1.1" strokeLinecap="round"/>
+                <line x1="9"  y1="14" x2="19" y2="14" stroke="#111111" strokeWidth="1.1" strokeLinecap="round"/>
+            </svg>
+            <div className="leading-none">
+                <span
+                    className="font-display text-xl tracking-wider text-ink dark:text-ivory"
+                    style={{ fontFamily: "'Bebas Neue', sans-serif", letterSpacing: '0.06em' }}
+                >
+                    AQUA<span className="text-coral">MARK</span>
+                </span>
+                <div className="meta-label mt-0.5 hidden sm:block">
+                    Image Integrity Lab
+                </div>
+            </div>
+        </Link>
+    );
+}
 
 export default function Navbar({ darkMode, toggleDarkMode }) {
     const [mobileOpen, setMobileOpen] = useState(false);
     const location = useLocation();
 
     return (
-        <nav className="sticky top-0 z-50 backdrop-blur-xl bg-white/75 dark:bg-surface-950/70 border-b border-white/30 dark:border-white/10">
+        <nav
+            className="sticky top-0 z-50 border-b"
+            style={{
+                backgroundColor: darkMode ? 'rgba(17,17,17,0.94)' : 'rgba(245,240,231,0.94)',
+                borderColor: darkMode ? '#2A2A2A' : '#D8D2C8',
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
+            }}
+        >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex h-16 items-center justify-between">
-                    <Link to="/" className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-500 via-primary-400 to-accent-400 shadow-lg shadow-primary-500/30">
-                            <IoWater className="text-white text-lg" />
-                        </div>
-                        <div>
-                            <div className="font-display text-lg font-bold text-surface-900 dark:text-white">AquaMark AI</div>
-                            <div className="hidden text-[11px] uppercase tracking-[0.24em] text-surface-500 dark:text-surface-400 sm:block">
-                                Invisible Watermark Lab
-                            </div>
-                        </div>
-                    </Link>
+                <div className="flex h-14 items-center justify-between gap-6">
 
-                    <div className="hidden md:flex items-center gap-2">
-                        {navLinks.map((link) => {
+                    {/* Logo */}
+                    <LogoMark />
+
+                    {/* Desktop nav */}
+                    <div className="hidden md:flex items-center gap-1">
+                        {NAV_LINKS.map((link) => {
                             const active = location.pathname === link.path;
                             return (
                                 <Link
                                     key={link.path}
                                     to={link.path}
-                                    className={`relative rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                                    className={[
+                                        'relative px-3.5 py-1.5 text-sm font-medium rounded transition-colors duration-150',
                                         active
-                                            ? 'text-primary-700 dark:text-primary-300'
-                                            : 'text-surface-700 hover:text-primary-700 dark:text-surface-200 dark:hover:text-primary-300'
-                                    }`}
+                                            ? 'text-coral'
+                                            : 'text-ash-600 dark:text-ash-300 hover:text-ink dark:hover:text-ivory',
+                                    ].join(' ')}
                                 >
                                     {link.label}
                                     {active && (
                                         <motion.span
-                                            layoutId="nav-pill"
-                                            className="absolute inset-0 -z-10 rounded-full bg-primary-100/80 dark:bg-primary-900/40"
+                                            layoutId="nav-underline"
+                                            className="absolute bottom-0 left-3.5 right-3.5 h-px bg-coral"
                                         />
                                     )}
                                 </Link>
@@ -55,51 +92,86 @@ export default function Navbar({ darkMode, toggleDarkMode }) {
                         })}
                     </div>
 
+                    {/* Right controls */}
                     <div className="flex items-center gap-2">
+                        {/* CTA — desktop only */}
+                        <Link
+                            to="/embed"
+                            className="hidden md:inline-flex btn-coral py-1.5 px-4 text-xs"
+                        >
+                            Open Workspace
+                        </Link>
+
+                        {/* Dark mode toggle */}
                         <button
                             type="button"
                             onClick={toggleDarkMode}
-                            className="rounded-full border border-white/40 bg-white/70 p-2.5 text-surface-700 transition hover:text-primary-600 dark:border-white/10 dark:bg-surface-900/70 dark:text-surface-100"
-                            aria-label="Toggle dark mode"
+                            aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+                            className="btn-ghost p-2"
                         >
-                            {darkMode ? <HiSun className="h-5 w-5" /> : <HiMoon className="h-5 w-5" />}
+                            {darkMode
+                                ? <HiSun   className="h-4.5 w-4.5" aria-hidden="true" />
+                                : <HiMoon  className="h-4.5 w-4.5" aria-hidden="true" />
+                            }
                         </button>
 
+                        {/* Mobile hamburger */}
                         <button
                             type="button"
-                            onClick={() => setMobileOpen((value) => !value)}
-                            className="rounded-full border border-white/40 bg-white/70 p-2.5 text-surface-700 dark:border-white/10 dark:bg-surface-900/70 dark:text-surface-100 md:hidden"
-                            aria-label="Toggle mobile navigation"
+                            onClick={() => setMobileOpen((v) => !v)}
+                            aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+                            aria-expanded={mobileOpen}
+                            className="btn-ghost p-2 md:hidden"
                         >
-                            {mobileOpen ? <HiOutlineX className="h-5 w-5" /> : <HiOutlineMenu className="h-5 w-5" />}
+                            {mobileOpen
+                                ? <HiX          className="h-5 w-5" aria-hidden="true" />
+                                : <HiMenuAlt3   className="h-5 w-5" aria-hidden="true" />
+                            }
                         </button>
                     </div>
                 </div>
             </div>
 
+            {/* Mobile menu */}
             <AnimatePresence>
                 {mobileOpen && (
                     <motion.div
+                        key="mobile-menu"
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
-                        className="overflow-hidden border-t border-white/30 dark:border-white/10 md:hidden"
+                        transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                        className="overflow-hidden border-t md:hidden"
+                        style={{ borderColor: darkMode ? '#2A2A2A' : '#D8D2C8' }}
                     >
-                        <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-4">
-                            {navLinks.map((link) => (
+                        <div className="flex flex-col gap-1 px-4 py-3">
+                            {NAV_LINKS.map((link) => {
+                                const active = location.pathname === link.path;
+                                return (
+                                    <Link
+                                        key={link.path}
+                                        to={link.path}
+                                        onClick={() => setMobileOpen(false)}
+                                        className={[
+                                            'px-3 py-2.5 text-sm font-medium rounded transition-colors',
+                                            active
+                                                ? 'text-coral bg-coral-muted'
+                                                : 'text-ash-600 dark:text-ash-300 hover:text-ink dark:hover:text-ivory',
+                                        ].join(' ')}
+                                    >
+                                        {link.label}
+                                    </Link>
+                                );
+                            })}
+                            <div className="pt-2 pb-1">
                                 <Link
-                                    key={link.path}
-                                    to={link.path}
+                                    to="/embed"
                                     onClick={() => setMobileOpen(false)}
-                                    className={`rounded-2xl px-4 py-3 text-sm font-semibold ${
-                                        location.pathname === link.path
-                                            ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/40 dark:text-primary-300'
-                                            : 'bg-white/70 text-surface-700 dark:bg-surface-900/70 dark:text-surface-100'
-                                    }`}
+                                    className="btn-coral w-full justify-center py-2.5 text-sm"
                                 >
-                                    {link.label}
+                                    Open Workspace
                                 </Link>
-                            ))}
+                            </div>
                         </div>
                     </motion.div>
                 )}
